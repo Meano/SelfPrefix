@@ -1,13 +1,16 @@
 name: SelfPrefix
 main: net.meano.SelfPrefix.SelfPrefixMain
-version: 0.1
+version: 1.0
+api-version: 1.14
 author: Meano
+website: www.meano.net
+prefix: SP
 
 commands:
   SelfPrefix:
     description: 
     usage: /SelfPrefix
-    aliases: [sp]
+    aliases: [sp,spf]
     permission: SelfPrefix.Command
     permission-message: 指令不允许。
 
