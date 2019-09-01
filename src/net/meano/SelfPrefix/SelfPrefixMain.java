@@ -1,84 +1,128 @@
 package net.meano.SelfPrefix;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Team;
 
-public class SelfPrefixMain  extends JavaPlugin{
+import net.meano.PlayerManager.BukkitMain;
+import net.meano.PlayerManager.PlayerInfo;
+
+public class SelfPrefixMain extends JavaPlugin{
 	public FileConfiguration PluginConfig;
 	public ConfigurationSection Players;
 	public String[] PlayerList;
 	public int Version;
+	public List<Player> PrefixPlayerList;
+	public ItemStack HonourBerry;
+	
+	public ItemStack GetHonourBerry() {
+		ItemStack Berry = new ItemStack(Material.SWEET_BERRIES, 1);
+		ItemMeta BerryMeta = Berry.getItemMeta();
+		BerryMeta.setDisplayName("è£èª‰æœå®");
+		ArrayList<String> BerryLores = new ArrayList<String>();
+		BerryLores.add(ChatColor.translateAlternateColorCodes('&', "&4&l--[ &8&nè£èª‰æœå®&4&l ]--"));
+		BerryLores.add("----------------");
+		BerryLores.add("å“å°é¢„è§ˆç§°å·");
+		BerryLores.add("é£Ÿç”¨è·å¾—ç§°å·");
+		BerryMeta.setLore(BerryLores);
+		Berry.setItemMeta(BerryMeta);
+		return Berry;
+	}
+	
+	public BukkitMain PMB;
+	
 	public void onEnable(){
-		//Log¿ªÊ¼¼ÇÂ¼
-		getLogger().info("SelfPrefix 0.1,by Meano. ÕıÔÚÔØÈë.");
 		LoadConfig();
 		PluginManager PM = Bukkit.getServer().getPluginManager();
+		PMB = (BukkitMain) PM.getPlugin("PlayerManager");
+		if(PMB != null) {
+			getLogger().info("PlayerManager Found!");
+		}
 		PM.registerEvents(new SelfPrefixListeners(this), this);
+		PrefixPlayerList = new ArrayList<Player>();
+
+		HonourBerry = GetHonourBerry();
+		//ShapedRecipe HonourBerryCube = new ShapedRecipe(); // new ShapedRecipe(this.PortalStar).shape(new String[] { "*#*", "#%#", "*#*" }).setIngredient('#', Material.EMERALD).setIngredient('*', Material.OBSIDIAN).setIngredient('%', Material.GOLDEN_APPLE);
+		//Bukkit.getServer().addRecipe(portalCube);
+
 	}
+	
+	// æ£€æŸ¥ç§°å·æ˜¯å¦å…è®¸
 	public boolean CheckAllow(String prefix){
 		if(prefix.equals(prefix.replaceAll("[^a-zA-Z_0-9\\[\\]\\&\u4e00-\u9fa5]", "")))
 			return true;
 		else
 			return false;
 	}
+	
+	// å‘½ä»¤å¤„ç†
 	public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args){
 		if(cmd.getName().equalsIgnoreCase("SelfPrefix")){
 			if(args.length>0){
 				if(args[0].toLowerCase().equals("rl")){
 					if(sender.isOp()){
 						LoadConfig();
-						sender.sendMessage("ÅäÖÃÔØÈë³É¹¦");
+						sender.sendMessage("é…ç½®è½½å…¥æˆåŠŸ");
 						return true;
 					}
 				}else if(args[0].toLowerCase().equals("pre")){
 					if(sender instanceof Player){
-						if(args.length<2){
-							sender.sendMessage(ChatColor.GREEN+"ÓÃ·¨: /sp pre &C[³ÆºÅ]&A ¼´¿ÉÔ¤ÀÀÄãµÄ³ÆºÅ£¬²»ÏûºÄ¸ü»»³ÆºÅ´ÎÊı£¬µ«Ö»ÓĞ20ÃëµÄÊ±¼ä");
+						if(PrefixPlayerList.contains(sender)){
+							sender.sendMessage(ChatColor.RED + "ç§°å·æ­£åœ¨é¢„è§ˆä¸­ï¼Œè¯·æŒ‰TABé”®æŸ¥çœ‹è‡ªå·±çš„ç§°å·æ•ˆæœï¼Œæœ¬æ¬¡ç§°å·é¢„è§ˆå®Œæˆåæ–¹å¯è¿›è¡Œä¸‹ä¸€æ¬¡é¢„è§ˆï¼");
+							return true;
+						}else if(args.length<2){
+							sender.sendMessage(ChatColor.GREEN+"ç”¨æ³•: /sp pre &C[ç§°å·]&A å³å¯é¢„è§ˆä½ çš„ç§°å·ï¼Œä¸æ¶ˆè€—æ›´æ¢ç§°å·æ¬¡æ•°ï¼Œä½†åªæœ‰20ç§’çš„æ—¶é—´");
 							return true;
 						}else if(args.length==2){
 							PlayerPrefix WillChange = GetPrefix((Player) sender);
 							if(WillChange!=null){
 								if(WillChange.Count>0)
 									if(CheckAllow(args[1])){
-										if(args[1].replaceAll("[\\&\\[\\]]","").length()<10){
-											sender.sendMessage(ChatColor.GREEN+"Ç°×º¿ÉÒÔÊ¹ÓÃ£¬ÄãÓĞ20ÃëµÄÊ±¼äÀ´Ô¤ÀÀÄãµÄ³ÆºÅ");
+										if(args[1].length()<16){
+											sender.sendMessage(ChatColor.GREEN+"å‰ç¼€å¯ä»¥ä½¿ç”¨ï¼Œä½ æœ‰20ç§’çš„æ—¶é—´æ¥é¢„è§ˆä½ çš„ç§°å·");
 											WillChange.Prefix = args[1];
 											PrePlayerPrefix((Player) sender, WillChange);
+											PrefixPlayerList.add((Player) sender);
 											Bukkit.getScheduler().scheduleSyncDelayedTask(this, 
 													new Runnable(){
 														public void run(){
 															SetPlayerPrefix((Player) sender);
-															sender.sendMessage(ChatColor.GREEN+"³ÆºÅÔ¤ÀÀÒÑ¾­½áÊø£¬Èç¹û¾õµÃÂúÒâÊ¹ÓÃÃüÁî/sp set &C[³ÆºÅ]&A À´±£´æÄãµÄ³ÆºÅ¡£");
+															PrefixPlayerList.remove((Player) sender);
+															sender.sendMessage(ChatColor.GREEN+"ç§°å·é¢„è§ˆå·²ç»ç»“æŸï¼Œå¦‚æœè§‰å¾—æ»¡æ„ä½¿ç”¨å‘½ä»¤/sp set &C[ç§°å·]&A æ¥ä¿å­˜ä½ çš„ç§°å·ã€‚");
 														}
 											}, 20*20L);
 											return true;
 										}else{
-											sender.sendMessage(ChatColor.RED+"±§Ç¸£¬³ÆºÅÌ«³¤ÁË!");
+											sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œç§°å·å¤ªé•¿äº†ï¼Œç§°å·å†…å®¹æœ€å¤šå¯15ä¸ªå­—ç¬¦!");
 											return true;
 										}
 									}else{
-										sender.sendMessage(ChatColor.RED+"±§Ç¸£¬³ÆºÅÄÚÓĞ·Ç·¨×Ö·û!");
+										sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œç§°å·å†…æœ‰ä¸å…è®¸ä½¿ç”¨çš„å­—ç¬¦ï¼Œå¯ä½¿ç”¨å­—ç¬¦æœ‰è‹±æ–‡å¤§å°å†™å­—æ¯ã€æ•°å­—ã€è‹±æ–‡ç¬¦å·ï¼ˆä¸‹åˆ’çº¿ã€å·¦å³æ–¹æ‹¬å·ã€&é¢œè‰²æ”¹å˜ç¬¦å·ï¼‰ã€ä¸­æ–‡å­—ç¬¦!");
 										return true;
 									}
 								else{
-									sender.sendMessage(ChatColor.RED+"ÄãµÄ³ÆºÅÊ¹ÓÃ´ÎÊıÒÑ¾­ÓÃ¾¡£¬ÎŞ·¨Ô¤ÀÀ³ÆºÅ");
+									sender.sendMessage(ChatColor.RED+"ä½ çš„ç§°å·ä½¿ç”¨æ¬¡æ•°å·²ç»ç”¨å°½ï¼Œæ— æ³•é¢„è§ˆç§°å·");
 									return true;
 								}
 							}else{
-								sender.sendMessage(ChatColor.RED+"±§Ç¸£¬Ö»ÓĞ¾èÖúÍæ¼Ò¿ÉÒÔÊ¹ÓÃÔ¤ÀÀ³ÆºÅ¹¦ÄÜ£¡");
+								sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œåªæœ‰æåŠ©ç©å®¶å¯ä»¥ä½¿ç”¨é¢„è§ˆç§°å·åŠŸèƒ½ï¼");
+								sender.sendMessage(ChatColor.RED+"å·²ç»æåŠ©çš„ç©å®¶è¯·è”ç³»ç®¡ç†å‘˜æ›´æ–°ç§°å·æ¬¡æ•°ï¼");
 								return true;
 							}
 						}
@@ -87,40 +131,41 @@ public class SelfPrefixMain  extends JavaPlugin{
 				}else if(args[0].toLowerCase().equals("set")){
 					if(sender instanceof Player){
 						if(args.length<2){
-							sender.sendMessage(ChatColor.GREEN+"ÓÃ·¨: /sp set &C[³ÆºÅ]&A ¼´¿ÉÉèÖÃÄãµÄ³ÆºÅ£¬ÏûºÄ¸ü»»³ÆºÅ´ÎÊı£¬½÷É÷Ê¹ÓÃ¡£");
+							sender.sendMessage(ChatColor.GREEN+"ç”¨æ³•: /sp set &C[ç§°å·]&A å³å¯è®¾ç½®ä½ çš„ç§°å·ï¼Œæ¶ˆè€—æ›´æ¢ç§°å·æ¬¡æ•°ï¼Œè°¨æ…ä½¿ç”¨ã€‚");
 							return true;
 						}else if(args.length==2){
 							PlayerPrefix WillChange = GetPrefix((Player) sender);
 							if(WillChange!=null){
 								if(WillChange.Count>0)
 									if(CheckAllow(args[1])){
-										if(args[1].replaceAll("[\\&\\[\\]]","").length()<10){
-											sender.sendMessage(ChatColor.GREEN+"Ç°×º¿ÉÒÔÊ¹ÓÃ£¬ÕıÔÚ¸ü¸Ä³ÆºÅ¡£¡£¡£");
+										if(args[1].length()<16){
+											sender.sendMessage(ChatColor.GREEN+"å‰ç¼€å¯ä»¥ä½¿ç”¨ï¼Œæ­£åœ¨æ›´æ”¹ç§°å·ã€‚ã€‚ã€‚");
 											WillChange.Prefix = args[1];
 											if(WillChange.Enable){
 												WillChange.Count = WillChange.Count-1;
 												SavePlayerPrefix(WillChange);
 												SetPlayerPrefix((Player) sender);
-												sender.sendMessage(ChatColor.GREEN+"ÄãµÄ³ÆºÅ"+GenDisplayName(WillChange)+"¸ü»»³É¹¦£¬Ê£Óà¸ü»»³ÆºÅ´ÎÊı"+WillChange.Count);
+												sender.sendMessage(ChatColor.GREEN+"ä½ çš„ç§°å·"+GenDisplayName(WillChange)+"æ›´æ¢æˆåŠŸï¼Œå‰©ä½™æ›´æ¢ç§°å·æ¬¡æ•°"+WillChange.Count);
 												return true;
 											}else{
-												sender.sendMessage(ChatColor.RED+"±§Ç¸£¬ÄãÏÖÔÚÎŞ·¨¸ü¸Ä³ÆºÅ£¬ÇëÁªÏµ¹ÜÀíÔ±!");
+												sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œä½ ç°åœ¨æ— æ³•æ›´æ”¹ç§°å·ï¼Œè¯·è”ç³»ç®¡ç†å‘˜!");
 												return true;
 											}
 										}else{
-											sender.sendMessage(ChatColor.RED+"±§Ç¸£¬³ÆºÅÌ«³¤ÁË!");
+											sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œç§°å·å¤ªé•¿äº†ï¼Œç§°å·å†…å®¹æœ€å¤šå¯15ä¸ªå­—ç¬¦!");
 											return true;
 										}
 									}else{
-										sender.sendMessage(ChatColor.RED+"±§Ç¸£¬³ÆºÅÄÚÓĞ·Ç·¨×Ö·û!");
+										sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œç§°å·å†…æœ‰ä¸å…è®¸ä½¿ç”¨çš„å­—ç¬¦ï¼Œå¯ä½¿ç”¨å­—ç¬¦æœ‰è‹±æ–‡å¤§å°å†™å­—æ¯ã€æ•°å­—ã€è‹±æ–‡ç¬¦å·ï¼ˆä¸‹åˆ’çº¿ã€å·¦å³æ–¹æ‹¬å·ã€&é¢œè‰²æ”¹å˜ç¬¦å·ï¼‰ã€ä¸­æ–‡å­—ç¬¦!");
 										return true;
 									}
 								else{
-									sender.sendMessage(ChatColor.RED+"ÄãµÄ³ÆºÅÊ¹ÓÃ´ÎÊıÒÑ¾­ÓÃ¾¡£¬ÎŞ·¨Ô¤ÀÀ³ÆºÅ");
+									sender.sendMessage(ChatColor.RED+"ç§°å·ä½¿ç”¨æ¬¡æ•°å·²ç»ç”¨å°½ï¼Œæ— æ³•é¢„è§ˆç§°å·");
 									return true;
 								}
 							}else{
-								sender.sendMessage(ChatColor.RED+"±§Ç¸£¬Ö»ÓĞ¾èÖúÍæ¼Ò¿ÉÒÔÊ¹ÓÃÔ¤ÀÀ³ÆºÅ¹¦ÄÜ£¡");
+								sender.sendMessage(ChatColor.RED+"æŠ±æ­‰ï¼Œåªæœ‰æåŠ©ç©å®¶å¯ä»¥ä½¿ç”¨é¢„è§ˆç§°å·åŠŸèƒ½ï¼");
+								sender.sendMessage(ChatColor.RED+"å·²ç»æåŠ©çš„ç©å®¶è¯·è”ç³»ç®¡ç†å‘˜æ›´æ–°ç§°å·æ¬¡æ•°ï¼");
 								return true;
 							}
 						}
@@ -130,34 +175,77 @@ public class SelfPrefixMain  extends JavaPlugin{
 					if(sender.isOp()){
 						if(args.length==4){
 							if(args[1].matches("[a-z_A-Z0-9\u4e00-\u9fa5]*")&&args[2].matches("[0-9]*")&&args[3].matches("[a-zA-Z_0-9\\[\\]\\&\u4e00-\u9fa5]*")){
-								PlayerPrefix GotPrefix = new PlayerPrefix(args[3],
-										Integer.parseInt(args[2]),
-										true,
-										args[1]);
+								PlayerPrefix GotPrefix = new PlayerPrefix(args[3], Integer.parseInt(args[2]), true, args[1]);
 								SavePlayerPrefix(GotPrefix);
 								LoadConfig();
-								sender.sendMessage("³É¹¦ÉèÖÃ"+args[1]+"³ÆºÅ");
+								sender.sendMessage("æˆåŠŸè®¾ç½®"+args[1]+"ç§°å·");
 								return true;
 							}else{
-								sender.sendMessage("²ÎÊı²»ÕıÈ·");
+								sender.sendMessage("å‚æ•°ä¸æ­£ç¡®");
+								return true;
+							}
+						}else if(args.length == 3){
+							if(args[1].matches("[a-z_A-Z0-9\u4e00-\u9fa5]*")&&args[2].matches("[0-9]*")){
+								PlayerPrefix GotPrefix = new PlayerPrefix("&a[Fantastic]&c", Integer.parseInt(args[2]), true, args[1]);
+								SavePlayerPrefix(GotPrefix);
+								LoadConfig();
+								sender.sendMessage("æˆåŠŸè®¾ç½®"+args[1]+"ç§°å·");
+								return true;
+							}else{
+								sender.sendMessage("å‚æ•°ä¸æ­£ç¡®");
 								return true;
 							}
 						}else{
-							sender.sendMessage("ÓÃ·¨: /sp deal Íæ¼Ò ´ÎÊı ³ÆºÅ");
+							sender.sendMessage("ç”¨æ³•: /sp deal ç©å®¶ æ¬¡æ•° ç§°å·");
 							return true;
 						}
 					}else{
 						return true;
 					}
+				}else if(args[0].toLowerCase().equals("rm")){
+					if(sender.isOp()){
+						if(args.length==2){
+							if(args[1].matches("[a-z_A-Z0-9\u4e00-\u9fa5]*")){
+								//getConfig().getConfigurationSection("Players").getKeys(false).remove(args[1]);
+								//for(String s:getConfig().getConfigurationSection("Players").getKeys(false).toArray(new String[0])){
+								//	Bukkit.broadcastMessage(s);
+								//}
+								if(getConfig().get("Players." + args[1]) != null){
+									getConfig().set("Players." + args[1], null);
+									saveConfig();
+									LoadConfig();
+									if(Bukkit.getPlayer(args[1]).isOnline())
+										RemovePlayerPrefix(Bukkit.getPlayer(args[1]));
+									sender.sendMessage(ChatColor.GREEN + "æˆåŠŸåˆ é™¤"+args[1]+"çš„ç§°å·");
+								}else{
+									sender.sendMessage(ChatColor.RED + "åˆ é™¤"+args[1]+"çš„ç§°å·å¤±è´¥ï¼Œæœªå­˜å‚¨æ­¤ç©å®¶ç§°å·ã€‚");
+								}
+								return true;
+							}else{
+								sender.sendMessage("ç©å®¶IDå‚æ•°ä¸æ­£ç¡®");
+								return true;
+							}
+						}else{
+							sender.sendMessage("ç”¨æ³•: /sp rm ç©å®¶ID");
+							return true;
+						}
+					}
 				}
-			}else{
-				sender.sendMessage(ChatColor.RED+"È±ÉÙ²ÎÊı,¿ÉÒÔÊ¹ÓÃ/sp pre»òÕß/sp set¡£");
-				return true;
 			}
+			sender.sendMessage(ChatColor.RED+"========ç¼ºå°‘å‚æ•°ï¼Œå¯ä½¿ç”¨ä»¥ä¸‹å‘½ä»¤========");
+			if(sender.isOp()){
+				sender.sendMessage(ChatColor.GREEN + "/sp rl <é‡è½½é…ç½®>");
+				sender.sendMessage(ChatColor.GREEN + "/sp rm ç©å®¶ID <ç§»é™¤ç©å®¶IDå­˜å‚¨èŠ‚ç‚¹>");
+				sender.sendMessage(ChatColor.GREEN + "/sp deal ç©å®¶ID æ¬¡æ•° ç§°å· <è®¾ç½®ç©å®¶ç§°å·æ¬¡æ•°åŠåˆå§‹ç§°å·>");
+			}
+			sender.sendMessage(ChatColor.GREEN + "/sp pre ç§°å· <é¢„è§ˆç©å®¶è‡ªå·±çš„ç§°å·>");
+			sender.sendMessage(ChatColor.GREEN + "/sp set ç§°å· <è®¾ç½®ç©å®¶è‡ªå·±çš„ç§°å·>");
+			return true;
 		}
 		return false;
 	}
-	//ÅäÖÃÔØÈë¼°ÖØÔØ
+
+	// é…ç½®è½½å…¥åŠé‡è½½
 	public void LoadConfig(){
 		File PluginConfigFile = new File(getDataFolder(), "config.yml");
 	        if (!PluginConfigFile.exists()) {
@@ -165,14 +253,10 @@ public class SelfPrefixMain  extends JavaPlugin{
 	        }
 	        if(PluginConfig!=null){
 	        	try {
-				getConfig().load(PluginConfigFile);
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InvalidConfigurationException e) {
-				e.printStackTrace();
-			}
+	        		getConfig().load(PluginConfigFile);
+	        	} catch (Exception e) {
+	        		e.printStackTrace();
+	        	}
 	        }else{
 	        	PluginConfig = getConfig();
 	        }
@@ -180,16 +264,17 @@ public class SelfPrefixMain  extends JavaPlugin{
 	        if(Version!=1){
 	        	PluginConfigFile.renameTo(new File(getDataFolder(),"Version."+Version+".bak.cofig.yml"));
 	        	saveDefaultConfig();
-	        	getLogger().info("ÅäÖÃÎÄ¼ş¸üĞÂ£¡Ô­ÅäÖÃÎÄ¼şÒÑ±¸·İ£¡");
+	        	getLogger().info("é…ç½®æ–‡ä»¶æ›´æ–°ï¼åŸé…ç½®æ–‡ä»¶å·²å¤‡ä»½ï¼");
 	        }
-	        //»ñÈ¡Íæ¼ÒÅäÖÃÇø¿é
+	        //è·å–ç©å®¶é…ç½®åŒºå—
 	        Players = PluginConfig.getConfigurationSection("Players");
 	        PlayerList = Players.getKeys(false).toArray(new String[0]);
 	        for(Player player : Bukkit.getOnlinePlayers()){
 	        	SetPlayerPrefix(player);
 	        }
 	}
-	//Éú³É³ÆºÅ
+
+	// ç”Ÿæˆç§°å·
 	public String GenDisplayName(PlayerPrefix Prefix){
 		return new StringBuffer()
 		.append(ChatColor.translateAlternateColorCodes('&',Prefix.Prefix))
@@ -198,7 +283,8 @@ public class SelfPrefixMain  extends JavaPlugin{
 		.append(ChatColor.RESET)
 		.toString();
 	}
-	//»ñ»ñÈ¡ÅäÖÃÎÄ¼şÖĞµÄ³ÆºÅ
+
+	// è·å–é…ç½®æ–‡ä»¶ä¸­çš„ç§°å·
 	public PlayerPrefix GetPrefix(Player P){
 		for(String PFind:PlayerList){
 			if(PFind.toLowerCase().equals(P.getName().toLowerCase())){
@@ -211,49 +297,70 @@ public class SelfPrefixMain  extends JavaPlugin{
 		}
 		return null;
 	}
-	//Í¨¹ıÃû³ÆÉèÖÃ³ÆºÅ
-	public void SetPlayerPrefix(String Name){
-		if(Bukkit.getPlayer(Name).isOnline()){
-			SetPlayerPrefix(Bukkit.getPlayer(Name));
+	
+	public void SetPlayerPrefix(UUID uuid) {
+		Player player = Bukkit.getPlayer(uuid);
+		if(player!= null && player.isOnline() && PMB.PlayerMap.containsKey(uuid.toString()))
+		{
+			PlayerInfo playerInfo = PMB.PlayerMap.get(uuid.toString());
+			if(playerInfo.GetInteger("Merit") < 1000)
+				return;
+			String playerName = player.getName();
+			Team prefixTeam = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(player.getName());
+			if(prefixTeam == null){
+				prefixTeam = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(player.getName());
+			}
+			prefixTeam.setPrefix(ChatColor.GOLD.toString());
+			prefixTeam.setColor(ChatColor.GOLD);
+			player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+			player.setPlayerListName(ChatColor.GOLD + playerName + ChatColor.RESET);
+			player.setDisplayName(ChatColor.GOLD + playerName + ChatColor.RESET);
 		}
 	}
-	//ÉèÖÃ³ÆºÅ
-	@SuppressWarnings("deprecation")
+
+	//é€šè¿‡åç§°è®¾ç½®ç§°å·
+	public void SetPlayerPrefix(String Name){
+		if(Bukkit.getPlayer(Name).isOnline()){
+	
+			//SetPlayerPrefix(Bukkit.getPlayer(Name));
+		}
+	}
+
+	// è®¾ç½®ç§°å·
 	public void SetPlayerPrefix(Player player){
 		PlayerPrefix Prefix;
 		Prefix = GetPrefix(player);
-		if(Prefix!=null)
+		if(Prefix!=null && player.hasPermission("SelfPrefix.Show")){
 			if(Prefix.Enable){
 				Team DisplayName = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(player.getName());
 				if(DisplayName == null){
 					DisplayName = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(player.getName());
 				}
 				DisplayName.setPrefix(ChatColor.translateAlternateColorCodes('&',Prefix.Prefix)+" ");
-				DisplayName.addPlayer(player.getPlayer());
+				DisplayName.addEntry(player.getName());
+				//DisplayName.addPlayer(player.getPlayer());
 				player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
 				player.setPlayerListName(GenDisplayName(Prefix));
 				player.setDisplayName(GenDisplayName(Prefix));
 			}
-	}
-	//É¾³ı³ÆºÅ
-	public void RemovePlayerPrefix(Player player){
-		PlayerPrefix Prefix;
-		Prefix = GetPrefix(player);
-		if(Prefix!=null){
-			Team DisplayName = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(player.getName());
-			if(DisplayName != null){
-				DisplayName.unregister();
-			}
-			//DisplayName.setPrefix(ChatColor.translateAlternateColorCodes('&',Prefix.Prefix)+" ");
-			//DisplayName.addPlayer(player);
-			//player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-			//player.setDisplayName(GenDisplayName(Prefix));
-			//player.setPlayerListName(GenDisplayName(Prefix));
+		}else{
+			RemovePlayerPrefix(player);
 		}
 	}
-	//Ô¤ÀÀ³ÆºÅ
+
+	// åˆ é™¤ç§°å·
+	public void RemovePlayerPrefix(Player player){
+		Team DisplayName = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(player.getName());
+		if(DisplayName != null){
+			DisplayName.unregister();
+			player.setDisplayName(null);
+			player.setPlayerListName(null);
+		}
+	}
+	
+	// é¢„è§ˆç§°å·
 	@SuppressWarnings("deprecation")
-		public void PrePlayerPrefix(Player player,PlayerPrefix Prefix){
+	public void PrePlayerPrefix(Player player,PlayerPrefix Prefix){
 		Team DisplayName = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(player.getName());
 		if(DisplayName == null){
 			DisplayName = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(player.getName());
@@ -263,7 +370,8 @@ public class SelfPrefixMain  extends JavaPlugin{
 		player.setDisplayName(GenDisplayName(Prefix));
 		player.setPlayerListName(GenDisplayName(Prefix));
 	}
-	//±£´æ³ÆºÅ
+
+	// ä¿å­˜ç§°å·
 	public boolean SavePlayerPrefix(PlayerPrefix Prefix){
 		for(String PFind:PlayerList){
 			if(PFind.toLowerCase().equals(Prefix.Name.toLowerCase())){
@@ -289,7 +397,8 @@ public class SelfPrefixMain  extends JavaPlugin{
 		}
 		return true;
 	}
-	//³ÆºÅÀà
+
+	// ç§°å·ç±»
 	public class PlayerPrefix{
 		public PlayerPrefix(String P, int C, boolean E ,String N){
 			Prefix = P;

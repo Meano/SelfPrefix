@@ -11,15 +11,11 @@ public class SelfPrefixListeners implements Listener{
 	public SelfPrefixListeners(SelfPrefixMain GetPlugin){
 		SPM = GetPlugin;
 	}
-	//玩家登陆事件
+	
 	@EventHandler(priority = EventPriority.HIGH , ignoreCancelled = true)
 	public void onPlayerJoin(PlayerJoinEvent event){
-		//SPM.getLogger().info("称号事件");
 		Player JoinPlayer = event.getPlayer();
-		if(JoinPlayer.hasPermission("SelfPrefix.Show")){
-			SPM.SetPlayerPrefix(JoinPlayer);
-		}else{
-			SPM.RemovePlayerPrefix(JoinPlayer);
-		}
+		SPM.SetPlayerPrefix(JoinPlayer.getUniqueId());
+		//SPM.SetPlayerPrefix(JoinPlayer);
 	}
 }
