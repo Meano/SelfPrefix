@@ -1,7 +1,0 @@
-Players:
-  Meano:
-    Count: 10
-    Prefix: "&A[普通玩家一枚]&C"
-    Enable: true
-Config:
-  Version: 1
