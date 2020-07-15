@@ -1,14 +1,15 @@
 name: SelfPrefix
 main: net.meano.SelfPrefix.SelfPrefixMain
-version: 1.0
-api-version: 1.16
+version: "1.0"
+api-version: "1.16"
 author: Meano
 website: www.meano.net
 prefix: SP
+depend: [PlayerManager]
 
 commands:
   SelfPrefix:
-    description: 
+    description: "自定义称号"
     usage: /SelfPrefix
     aliases: [sp,spf]
     permission: SelfPrefix.Command
