@@ -19,6 +19,7 @@ import org.bukkit.scoreboard.Team;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,12 +58,7 @@ public class SelfPrefixMain extends JavaPlugin{
 		PrefixPlayerList = new ArrayList<Player>();
 
 		HonourBerry = GetHonourBerry();
-		for(var player : Bukkit.getOnlinePlayers()) {
-			SetPlayerPrefix(player.getUniqueId());
-		}
-		//ShapedRecipe HonourBerryCube = new ShapedRecipe(); // new ShapedRecipe(this.PortalStar).shape(new String[] { "*#*", "#%#", "*#*" }).setIngredient('#', Material.EMERALD).setIngredient('*', Material.OBSIDIAN).setIngredient('%', Material.GOLDEN_APPLE);
-		//Bukkit.getServer().addRecipe(portalCube);
-
+		UpdatePlayerPrefix();
 	}
 	
 	// 检查称号是否允许
@@ -104,7 +100,7 @@ public class SelfPrefixMain extends JavaPlugin{
 											Bukkit.getScheduler().scheduleSyncDelayedTask(this, 
 													new Runnable(){
 														public void run(){
-															SetPlayerPrefix((Player) sender);
+															UpdatePlayerPrefix((Player) sender);
 															PrefixPlayerList.remove((Player) sender);
 															sender.sendMessage(ChatColor.GREEN+"称号预览已经结束，如果觉得满意使用命令/sp set &C[称号]&A 来保存你的称号。");
 														}
@@ -146,7 +142,7 @@ public class SelfPrefixMain extends JavaPlugin{
 											if(WillChange.Enable){
 												WillChange.Count = WillChange.Count-1;
 												SavePlayerPrefix(WillChange);
-												SetPlayerPrefix((Player) sender);
+												UpdatePlayerPrefix((Player) sender);
 												sender.sendMessage(ChatColor.GREEN+"你的称号"+GenDisplayName(WillChange)+"更换成功，剩余更换称号次数"+WillChange.Count);
 												return true;
 											}else{
@@ -272,7 +268,7 @@ public class SelfPrefixMain extends JavaPlugin{
 	        Players = PluginConfig.getConfigurationSection("Players");
 	        PlayerList = Players.getKeys(false).toArray(new String[0]);
 	        for(Player player : Bukkit.getOnlinePlayers()){
-	        	SetPlayerPrefix(player);
+	        	UpdatePlayerPrefix(player);
 	        }
 	}
 
@@ -300,18 +296,28 @@ public class SelfPrefixMain extends JavaPlugin{
 		return null;
 	}
 	
-	public void SetPlayerPrefix(UUID uuid) {
-		Player player = Bukkit.getPlayer(uuid);
-		if(player!= null && player.isOnline() && PMB.PlayerMap.containsKey(uuid.toString()))
-		{
-			PlayerInfo playerInfo = PMB.PlayerMap.get(uuid.toString());
+	public void UpdatePlayerPrefix() {
+		PlayerInfo[] playerInfos = new PlayerInfo[PMB.PlayerMap.size()];
+		PMB.PlayerMap.values().toArray(playerInfos);
+		Arrays.sort(playerInfos, (p1, p2) -> {
+			int p1Merit = p1.GetInteger("Merit");
+			int p2Merit = p2.GetInteger("Merit");
+			return p2Merit - p1Merit;
+		});
+		int index = 0;
+		for(PlayerInfo playerInfo : playerInfos) {
+			//PlayerInfo playerInfo = PMB.PlayerMap.get(uuid.toString());
 			int playerMerit = playerInfo.GetInteger("Merit");
-			if(playerMerit < 1000)
-				return;
-			String playerName = player.getName();
-			Team prefixTeam = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(player.getName());
-			if(prefixTeam == null){
-				prefixTeam = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(player.getName());
+
+			String playerIndex = String.format("%05d", index++);
+			Team prefixTeam = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(playerIndex);
+			if(prefixTeam == null) {
+				prefixTeam = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(playerIndex);
+			}
+			else {
+				for(String entry : prefixTeam.getEntries()) {
+					prefixTeam.removeEntry(entry);
+				}
 			}
 
 			ChatColor playerNameColor = switch(playerMerit / 1000) {
@@ -325,21 +331,34 @@ public class SelfPrefixMain extends JavaPlugin{
 
 			prefixTeam.setPrefix(playerNameColor.toString());
 			prefixTeam.setColor(playerNameColor);
-			player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
-			player.setPlayerListName(playerNameColor + playerName + ChatColor.RESET);
-			player.setDisplayName(playerNameColor + playerName + ChatColor.RESET);
+
+			Player iPlayer = null;
+			for(Player fplayer: Bukkit.getOnlinePlayers())
+			{
+				if(fplayer.getUniqueId().equals(UUID.fromString(playerInfo.GetPlayerUUID()))){
+					iPlayer = fplayer;
+					break;
+				}
+			}
+			if(iPlayer == null)
+				continue;
+			String playerName = playerInfo.GetPlayerName();
+			prefixTeam.addEntry(playerName);
+			iPlayer.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
+			iPlayer.setPlayerListName(playerNameColor + playerName + ChatColor.RESET);
+			iPlayer.setDisplayName(playerNameColor + playerName + ChatColor.RESET);
 		}
 	}
 
 	//通过名称设置称号
-	public void SetPlayerPrefix(String Name){
+	public void UpdatePlayerPrefix(String Name){
 		if(Bukkit.getPlayer(Name).isOnline()){
 			//SetPlayerPrefix(Bukkit.getPlayer(Name));
 		}
 	}
 
 	// 设置称号
-	public void SetPlayerPrefix(Player player){
+	public void UpdatePlayerPrefix(Player player){
 		PlayerPrefix Prefix;
 		Prefix = GetPrefix(player);
 		if(Prefix!=null && player.hasPermission("SelfPrefix.Show")){

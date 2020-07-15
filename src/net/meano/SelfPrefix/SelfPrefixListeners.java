@@ -15,7 +15,6 @@ public class SelfPrefixListeners implements Listener{
 	@EventHandler(priority = EventPriority.HIGH , ignoreCancelled = true)
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player JoinPlayer = event.getPlayer();
-		SPM.SetPlayerPrefix(JoinPlayer.getUniqueId());
-		//SPM.SetPlayerPrefix(JoinPlayer);
+		SPM.UpdatePlayerPrefix(JoinPlayer.getUniqueId());
 	}
 }
